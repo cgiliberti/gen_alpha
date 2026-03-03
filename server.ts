@@ -3,6 +3,17 @@ import { parse } from 'url';
 import next from 'next';
 import cron from 'node-cron';
 
+// Validate required environment variables at startup
+const REQUIRED_ENV = ['ANTHROPIC_API_KEY', 'CRON_SECRET'] as const;
+const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
+if (missing.length > 0) {
+  console.error(
+    `[startup] Missing required environment variables: ${missing.join(', ')}\n` +
+    `Copy .env.example to .env and fill in the values.`
+  );
+  process.exit(1);
+}
+
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT ?? '3000', 10);

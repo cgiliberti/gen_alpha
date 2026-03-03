@@ -10,7 +10,11 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node --project tsconfig.server.json src/lib/seed.ts"
+    "db:push": "prisma db push",
+    "db:reset": "prisma db push --force-reset && npm run db:seed",
+    "db:seed": "ts-node --project tsconfig.server.json src/lib/seed.ts",
+    "build:server": "tsc --project tsconfig.server.json --outDir dist",
+    "build:all": "npm run build && npm run build:server"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
