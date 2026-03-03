@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  slug       String    @unique
+  newspaper  String
+  url        String
+  scraperKey String    @unique
+  createdAt  DateTime  @default(now())
+
+  students Student[]
+  articles Article[]
+}
+
+model Student {
+  id           Int       @id @default(autoincrement())
+  name         String
+  slug         String    @unique
+  schoolId     Int
+  school       School    @relation(fields: [schoolId], references: [id])
+  bio          String?
+  majorKeyword String?
+  profileUrl   String?
+  avatarUrl    String?
+
+  avgAgency             Float?
+  avgOrthogonalThinking Float?
+  avgCuriosity          Float?
+  articleCount          Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles Article[]
+
+  @@index([schoolId])
+  @@index([avgAgency])
+  @@index([avgCuriosity])
+  @@index([avgOrthogonalThinking])
+}
+
+model Article {
+  id          Int       @id @default(autoincrement())
+  title       String
+  url         String    @unique
+  publishedAt DateTime
+  summary     String?
+  fullText    String?
+  imageUrl    String?
+  analyzed    Boolean   @default(false)
+  scrapedAt   DateTime  @default(now())
+
+  schoolId  Int
+  school    School  @relation(fields: [schoolId], references: [id])
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  analysis ArticleAnalysis?
+
+  @@index([studentId])
+  @@index([schoolId])
+  @@index([publishedAt])
+  @@index([analyzed])
+}
+
+model ArticleAnalysis {
+  id        Int     @id @default(autoincrement())
+  articleId Int     @unique
+  article   Article @relation(fields: [articleId], references: [id])
+
+  agencyScore     Int
+  agencyReasoning String
+
+  orthogonalThinkingScore     Int
+  orthogonalThinkingReasoning String
+
+  curiosityScore     Int
+  curiosityReasoning String
+
+  rawResponse String?
+  analyzedAt  DateTime @default(now())
+}
