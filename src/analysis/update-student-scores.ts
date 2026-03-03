@@ -15,13 +15,16 @@ export async function updateStudentScores(studentId: number): Promise<void> {
   const avg = (values: number[]) =>
     values.reduce((sum, v) => sum + v, 0) / values.length;
 
+  // Count all articles (not just analyzed ones) for accurate article count
+  const totalArticles = await prisma.article.count({ where: { studentId } });
+
   await prisma.student.update({
     where: { id: studentId },
     data: {
       avgAgency: avg(analyses.map((a) => a.agencyScore)),
       avgOrthogonalThinking: avg(analyses.map((a) => a.orthogonalThinkingScore)),
       avgCuriosity: avg(analyses.map((a) => a.curiosityScore)),
-      articleCount: analyses.length,
+      articleCount: totalArticles,
     },
   });
 }

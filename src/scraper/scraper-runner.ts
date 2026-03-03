@@ -27,6 +27,9 @@ export async function runSchoolScraper(
   console.log(`[scraper-runner] Starting scrape for ${schoolName}...`);
   let articlesFound = 0;
   let studentsFound = 0;
+  let skipped = 0;
+  let noBio = 0;
+  let notCs = 0;
 
   try {
     const scrapedArticles = await scraper.getRecentArticles();
@@ -36,31 +39,34 @@ export async function runSchoolScraper(
       try {
         // Skip if already in DB
         const existing = await prisma.article.findUnique({ where: { url: scraped.url } });
-        if (existing) continue;
-
-        // Try to get author bio
-        let bio = scraped.authorBio;
-        if (!bio && scraped.authorProfileUrl) {
-          try {
-            bio = await scraper.getAuthorBio(scraped.authorProfileUrl);
-          } catch {
-            // bio stays null
-          }
+        if (existing) {
+          skipped++;
+          continue;
         }
 
-        // If no bio from index/profile, try fetching from article page
+        // Try to get author bio (in priority order)
+        let bio = scraped.authorBio;
+
+        if (!bio && scraped.authorProfileUrl) {
+          bio = await scraper.getAuthorBio(scraped.authorProfileUrl).catch(() => null);
+        }
+
+        // Fall back to bio from article page (no more `any` cast)
         if (!bio) {
-          try {
-            const $ = await (scraper as any).fetchHtml(scraped.url);
-            bio = $('div.author-bio, .contributor-bio, .staff-bio, .byline-bio').text().trim() || null;
-          } catch {
-            // bio stays null
-          }
+          bio = await scraper.getBioFromArticlePage(scraped.url);
+        }
+
+        if (!bio) {
+          noBio++;
+          continue;
         }
 
         // Detect CS major
         const keyword = detectCsMajor(bio);
-        if (!keyword) continue;
+        if (!keyword) {
+          notCs++;
+          continue;
+        }
 
         // Upsert student
         const studentSlug = slugify(`${scraped.authorName}-${scraper.schoolSlug}`);
@@ -87,11 +93,7 @@ export async function runSchoolScraper(
         // Fetch full text
         let fullText = scraped.fullText;
         if (!fullText) {
-          try {
-            fullText = await scraper.getArticleFullText(scraped.url);
-          } catch {
-            // proceed without full text
-          }
+          fullText = await scraper.getArticleFullText(scraped.url).catch(() => null);
         }
 
         const snippet = scraped.summary ?? (fullText ? fullText.substring(0, 500) : null);
@@ -151,6 +153,8 @@ export async function runSchoolScraper(
   }
 
   console.log(
-    `[scraper-runner] ${schoolName} complete — ${articlesFound} articles, ${studentsFound} new students`
+    `[scraper-runner] ${schoolName} done — ` +
+    `${articlesFound} new articles, ${studentsFound} new students | ` +
+    `skipped=${skipped} noBio=${noBio} notCS=${notCs}`
   );
 }

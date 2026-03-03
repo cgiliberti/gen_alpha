@@ -9,6 +9,7 @@ export default function NavBar() {
   const links = [
     { href: '/', label: 'Directory' },
     { href: '/feed', label: 'Newsfeed' },
+    { href: '/admin', label: 'Admin' },
   ];
 
   return (
