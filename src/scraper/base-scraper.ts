@@ -99,7 +99,7 @@ export abstract class BaseScraper {
     }
   }
 
-  protected cutoffDate(hoursBack = 48): Date {
+  protected cutoffDate(hoursBack = 720): Date {
     return new Date(Date.now() - hoursBack * 60 * 60 * 1000);
   }
 
