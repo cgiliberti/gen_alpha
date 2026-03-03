@@ -19,18 +19,29 @@ export async function GET(req: NextRequest) {
   };
   const orderByField = validSortFields[sortBy] ?? 'avgAgency';
 
-  const where = school ? { school: { slug: school } } : {};
+  const q = searchParams.get('q');
+  const hasScores = searchParams.get('hasScores');
 
-  const [students, total] = await Promise.all([
-    prisma.student.findMany({
-      where,
-      include: { school: { select: { name: true, slug: true } } },
-      orderBy: { [orderByField]: order },
-      skip,
-      take: limit,
-    }),
-    prisma.student.count({ where }),
-  ]);
+  const where: Record<string, unknown> = {};
+  if (school) where.school = { slug: school };
+  if (q) where.name = { contains: q };
+  if (hasScores === 'true') where.avgAgency = { not: null };
 
-  return NextResponse.json({ students, total, page, limit });
+  try {
+    const [students, total] = await Promise.all([
+      prisma.student.findMany({
+        where,
+        include: { school: { select: { name: true, slug: true } } },
+        orderBy: { [orderByField]: order },
+        skip,
+        take: limit,
+      }),
+      prisma.student.count({ where }),
+    ]);
+
+    return NextResponse.json({ students, total, page, limit });
+  } catch (err) {
+    console.error('[api/students]', err);
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
 }
