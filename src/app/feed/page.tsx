@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import ArticleCard from '@/components/feed/ArticleCard';
 import { SCHOOLS } from '@/lib/constants';
+import { shortSchoolName } from '@/lib/utils';
+import Link from 'next/link';
 
 interface SearchParams {
   school?: string;
@@ -56,7 +58,7 @@ export default async function FeedPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      {/* School filter */}
+      {/* School filter pills */}
       <div className="mb-6 flex flex-wrap gap-2">
         <a
           href="/feed"
@@ -78,18 +80,22 @@ export default async function FeedPage({ searchParams }: PageProps) {
                 : 'border-gray-300 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            {s.name
-              .replace(' University', '')
-              .replace('University of Pennsylvania', 'Penn')
-              .replace('Carnegie Mellon University', 'CMU')}
+            {shortSchoolName(s.name)}
           </a>
         ))}
       </div>
 
       {articles.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          <p className="text-lg">No articles yet.</p>
-          <p className="text-sm mt-2">Run the scraper to populate the feed.</p>
+        <div className="text-center py-20 text-gray-400">
+          <div className="text-4xl mb-4">📰</div>
+          <p className="text-lg font-medium text-gray-600">No articles yet.</p>
+          <p className="text-sm mt-2">
+            Visit the{' '}
+            <Link href="/admin" className="text-indigo-600 hover:underline">
+              admin panel
+            </Link>{' '}
+            to trigger a scrape.
+          </p>
         </div>
       ) : (
         <>
@@ -104,27 +110,47 @@ export default async function FeedPage({ searchParams }: PageProps) {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8">
+              {page > 1 && (
+                <a
+                  href={`/feed?${new URLSearchParams({ ...(school ? { school } : {}), page: String(page - 1) }).toString()}`}
+                  className="px-3 py-1.5 rounded text-sm border border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  &larr; Prev
+                </a>
+              )}
               {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((p) => Math.abs(p - page) <= 2)
-                .map((p) => {
-                  const next = new URLSearchParams({
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                .map((p, idx, arr) => {
+                  const params = new URLSearchParams({
                     ...(school ? { school } : {}),
                     page: String(p),
                   });
                   return (
-                    <a
-                      key={p}
-                      href={`/feed?${next.toString()}`}
-                      className={`px-3 py-1.5 rounded text-sm ${
-                        p === page
-                          ? 'bg-indigo-600 text-white'
-                          : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      {p}
-                    </a>
+                    <span key={p} className="flex items-center gap-2">
+                      {idx > 0 && arr[idx - 1] !== p - 1 && (
+                        <span className="text-gray-400 text-sm">&hellip;</span>
+                      )}
+                      <a
+                        href={`/feed?${params.toString()}`}
+                        className={`px-3 py-1.5 rounded text-sm ${
+                          p === page
+                            ? 'bg-indigo-600 text-white'
+                            : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {p}
+                      </a>
+                    </span>
                   );
                 })}
+              {page < totalPages && (
+                <a
+                  href={`/feed?${new URLSearchParams({ ...(school ? { school } : {}), page: String(page + 1) }).toString()}`}
+                  className="px-3 py-1.5 rounded text-sm border border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  Next &rarr;
+                </a>
+              )}
             </div>
           )}
         </>

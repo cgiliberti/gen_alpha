@@ -50,3 +50,24 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength).trim() + '…';
 }
+
+const SHORT_NAMES: Record<string, string> = {
+  'Harvard University': 'Harvard',
+  'Yale University': 'Yale',
+  'Princeton University': 'Princeton',
+  'Columbia University': 'Columbia',
+  'University of Pennsylvania': 'Penn',
+  'Brown University': 'Brown',
+  'Dartmouth College': 'Dartmouth',
+  'Cornell University': 'Cornell',
+  'Stanford University': 'Stanford',
+  'MIT': 'MIT',
+  'Caltech': 'Caltech',
+  'Carnegie Mellon University': 'CMU',
+  'Tufts University': 'Tufts',
+  'Georgia Tech': 'Georgia Tech',
+};
+
+export function shortSchoolName(name: string): string {
+  return SHORT_NAMES[name] ?? name.replace(' University', '').replace(' College', '');
+}
